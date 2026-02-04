@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -35,6 +35,22 @@ export class PlayersService {
                 data: {
                     cityId: city.id
                 },
+            });
+
+            const buildingTypes = await tx.buildingType.findMany({
+                select: { id: true },
+            });
+
+            if (buildingTypes.length === 0) {
+                throw new InternalServerErrorException('No building types seeded');
+            }
+
+            await tx.cityBuilding.createMany({
+                data: buildingTypes.map(bt => ({
+                    cityId: city.id,
+                    buildingTypeId: bt.id,
+                    level: 0,
+                })),
             });
 
             return {
