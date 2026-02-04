@@ -45,6 +45,54 @@ async function main() {
     });
   }
 
+  // 3) Troop categories
+  const infantry = await prisma.troopCategory.upsert({
+    where: { code: 'infantry' },
+    update: {},
+    create: { code: 'infantry' },
+  });
+
+  const cavalry = await prisma.troopCategory.upsert({
+    where: { code: 'cavalry' },
+    update: {},
+    create: { code: 'cavalry' },
+  });
+
+  const archers = await prisma.troopCategory.upsert({
+    where: { code: 'archers' },
+    update: {},
+    create: { code: 'archers' },
+  });
+
+
+
+  // 3) Troop types
+  const troopTypes = [
+    {
+      code: 'inf_infantry',
+      categoryId: infantry.id,
+    },
+    {
+      code: 'cav_cavalry',
+      categoryId: cavalry.id,
+    },
+    {
+      code: 'arc_archer',
+      categoryId: archers.id,
+    },
+  ] as const;
+
+  for (const tt of troopTypes) {
+    await prisma.troopType.upsert({
+      where: { code: tt.code },
+      update: {},
+      create: {
+        code: tt.code,
+        categoryId: tt.categoryId,
+      },
+    });
+  }
+
   console.log(`Seed complete. World=${world.code}, buildingTypes=${buildingTypes.length}`);
 }
 
