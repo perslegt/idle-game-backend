@@ -65,6 +65,17 @@ export class TickService {
                 gainedByResource[building.buildingType.productionResource] += gained;
             }
 
+            await tx.cityResources.update({
+                where: { cityId },
+                data: {
+                    wood: { increment: gainedByResource.wood },
+                    stone: { increment: gainedByResource.stone },
+                    iron: { increment: gainedByResource.iron },
+                    food: { increment: gainedByResource.food },
+                    gold: { increment: gainedByResource.gold },
+                },
+            });
+
             await tx.city.update({
                 where: { id: cityId },
                 data: { lastTickAt: now },
