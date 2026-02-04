@@ -1,22 +1,38 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
+const MAX_ELAPSED_SECONDS = 8 * 60 * 60; // 8 hours
+
 @Injectable()
 export class TickService {
     constructor(private readonly prisma: PrismaService) {}
 
     async tickCity(cityId: string) {
-        const city = await this.prisma.city.findUnique({
-            where: { id: cityId },
-            select: { lastTickAt: true },
+        return this.prisma.$transaction(async (tx) => {
+            const row = await tx.$queryRaw<{ lastTickAt: Date }[]>`
+                SELECT "lastTickAt"
+                FROM "cities"
+                WHERE id = ${cityId}
+                FOR UPDATE
+            `;
+
+            if (row.length === 0) throw new Error('City not found');
+
+            const lastTickAt = row[0].lastTickAt;
+            const now = new Date();
+
+            const elapsedSecondsRaw = Math.floor(
+                (now.getTime() - lastTickAt.getTime()) / 1000,
+            );
+
+            const elapsedSeconds = Math.max(0, Math.min(MAX_ELAPSED_SECONDS, elapsedSecondsRaw));
+
+            await tx.city.update({
+                where: { id: cityId },
+                data: { lastTickAt: now },
+            });
+
+            return { elapsedSeconds };
         });
-
-        if (!city) throw new Error('City not found');
-
-        const now = new Date();
-
-        const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - city.lastTickAt.getTime()) / 1000));
-
-        return { elapsedSeconds };
     }
 }
