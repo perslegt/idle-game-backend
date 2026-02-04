@@ -53,6 +53,23 @@ export class PlayersService {
                 })),
             });
 
+            const troopTypes = await tx.troopType.findMany({
+                select: { id: true },
+            });
+
+            if (troopTypes.length === 0) {
+                throw new InternalServerErrorException('No troop types seeded');
+            }
+
+            await tx.cityTroopStack.createMany({
+                data: troopTypes.map(tt => ({
+                    cityId: city.id,
+                    troopTypeId: tt.id,
+                    level: 1,
+                    quantity: 0,
+                })),
+            });
+
             return {
                 playerId: player.id,
                 cityId: city.id,
