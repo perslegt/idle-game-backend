@@ -7,32 +7,40 @@ export class PlayersService {
     constructor(private readonly prisma: PrismaService) {}
 
     async create(dto: CreatePlayerDto) {
-        const world = await this.prisma.world.findUnique({
-            where: { id: dto.worldId },
-        });
-        if (!world) {
-            throw new NotFoundException('World not found');
-        }
+        return this.prisma.$transaction(async (tx) => {
+            const world = await this.prisma.world.findUnique({
+                where: { id: dto.worldId },
+            });
+            if (!world) {
+                throw new NotFoundException('World not found');
+            }
 
-        const username = dto.username.trim();
-        const cityName = (dto.cityName?.trim() || `${username}'s City`);
+            const username = dto.username.trim();
+            const cityName = (dto.cityName?.trim() || `${username}'s City`);
 
-        const player = await this.prisma.player.create({
-            data: {
-                worldId: dto.worldId, username
-            },
-        });
+            const player = await tx.player.create({
+                data: {
+                    worldId: dto.worldId, username
+                },
+            });
 
-        const city = await this.prisma.city.create({
-            data: {
+            const city = await tx.city.create({
+                data: {
+                    playerId: player.id,
+                    name: cityName,
+                },
+            });
+
+            await tx.cityResources.create({
+                data: {
+                    cityId: city.id
+                },
+            });
+
+            return {
                 playerId: player.id,
-                name: cityName,
-            },
+                cityId: city.id,
+            };
         });
-
-        return {
-            playerId: player.id,
-            cityId: city.id,
-        };
     }
 }
