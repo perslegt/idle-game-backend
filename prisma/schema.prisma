@@ -5,10 +5,196 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum ResourceType {
+  gold
+  wood
+  stone
+  iron
+  food
+}
+
+enum BattleResult {
+  attacker_win
+  defender_win
+}
+
+model World {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  players Player[]
+  battles PvpBattle[]
+
+  @@map("worlds")
+}
+
+model Player {
+  id        String   @id @default(uuid()) @db.Uuid
+  worldId   String   @db.Uuid
+  username  String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  city  City?
+
+  attacks  PvpBattle[] @relation("attacker")
+  defenses PvpBattle[] @relation("defender")
+
+  @@unique([worldId, username], name: "uq_player__world_id_username")
+  @@index([worldId], name: "ix_players__world_id")
+  @@map("players")
+}
+
+model City {
+  id         String   @id @default(uuid()) @db.Uuid
+  playerId   String   @unique @db.Uuid
+  name       String
+  lastTickAt DateTime @default(now()) @db.Timestamptz(6)
+
+  player      Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  resources   CityResources?
+  troopsStack CityTroopStack[]
+  buildings   CityBuilding[]
+
+  @@index([playerId], name: "ix_cities__player_id")
+  @@map("cities")
+}
+
+model CityResources {
+  cityId    String   @id @db.Uuid
+  gold      Int      @default(0)
+  wood      Int      @default(0)
+  stone     Int      @default(0)
+  iron      Int      @default(0)
+  food      Int      @default(0)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@map("city_resources")
+}
+
+model TroopCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique // infantry, archers, cavalry
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  troopTypes TroopType[]
+
+  @@map("troop_categories")
+}
+
+model TroopType {
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String   @db.Uuid
+  code       String   @unique // swordsman, axeman, horseman
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  category TroopCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  levels   TroopTypeLevel[]
+  stacks   CityTroopStack[]
+
+  @@index([categoryId], name: "ix_troop_types__category_id")
+  @@map("troop_types")
+}
+
+model TroopTypeLevel {
+  troopTypeId   String   @db.Uuid
+  level         Int
+  attack        Int
+  defense       Int
+  carryCapacity Int      @map("carry_capacity")
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  troopType TroopType @relation(fields: [troopTypeId], references: [id], onDelete: Cascade)
+
+  @@id([troopTypeId, level])
+  @@map("troop_type_levels")
+}
+
+model CityTroopStack {
+  cityId      String   @db.Uuid
+  troopTypeId String   @db.Uuid
+  level       Int
+  quantity    Int      @default(0)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  city      City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  troopType TroopType @relation(fields: [troopTypeId], references: [id], onDelete: Restrict)
+
+  @@id([cityId, troopTypeId, level])
+  @@index([troopTypeId], name: "ix_city_troop_stacks__troop_type_id")
+  @@map("city_troop_stacks")
+}
+
+model BuildingType {
+  id                 String        @id @default(uuid()) @db.Uuid
+  code               String        @unique
+  productionResource ResourceType?
+  baseRate           Int
+  growthMultiplier   Int
+  createdAt          DateTime      @default(now()) @db.Timestamptz(6)
+
+  cityBuildings CityBuilding[]
+
+  @@map("building_types")
+}
+
+model CityBuilding {
+  cityId         String   @db.Uuid
+  buildingTypeId String   @db.Uuid
+  level          Int      @default(0)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  city         City         @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  buildingType BuildingType @relation(fields: [buildingTypeId], references: [id], onDelete: Restrict)
+
+  @@id([cityId, buildingTypeId])
+  @@index([buildingTypeId], name: "ix_city_buildings__building_type_id")
+  @@map("city_buildings")
+}
+
+model PvpBattle {
+  id         String   @id @default(uuid()) @db.Uuid
+  worldId    String   @db.Uuid
+  occurredAt DateTime @default(now()) @db.Timestamptz(6)
+
+  attackerId String @db.Uuid
+  defenderId String @db.Uuid
+
+  resolverVersion String
+  attackPower     BigInt
+  defensePower    BigInt
+  result          BattleResult
+
+  troopsSent     Json
+  attackerLosses Json
+  defenderLosses Json
+
+  lootPotential Json
+  lootActual    Json
+  carryCapacity Int
+
+  resourcesBefore Json
+  resourcesAfter  Json
+
+  world World @relation(fields: [worldId], references: [id], onDelete: Cascade)
+
+  attacker Player @relation("attacker", fields: [attackerId], references: [id], onDelete: Restrict)
+  defender Player @relation("defender", fields: [defenderId], references: [id], onDelete: Restrict)
+
+  @@index([worldId], name: "ix_pvp_battles__world_id")
+  @@map("pvp_battles")
 }
