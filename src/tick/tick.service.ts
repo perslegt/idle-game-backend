@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { first } from "rxjs";
 import { BUILDING_LEVEL_CONFIG } from "./config/building-level.config";
 
 const MAX_ELAPSED_SECONDS = 8 * 60 * 60; // 8 hours
