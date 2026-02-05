@@ -2,13 +2,20 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { PrismaService } from "src/prisma/prisma.service";
 import { TickService } from "src/tick/tick.service";
 import { BUILDING_UPGRADE_COST } from "./config/building-upgrade-cost";
+import { StateService } from "src/state/state.service";
 
 @Injectable()
 export class BuildingsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly tickService: TickService,
+        private readonly stateService: StateService,
     ) {}
+
+    async upgradeAndReturnState(playerId: string, cityId: string, buildingCode: string) {
+        await this.upgrade(cityId, buildingCode);
+        return this.stateService.getState(playerId);
+    }
 
     async upgrade(cityId: string, buildingCode: string) {
         return this.prisma.$transaction(async (tx) => {

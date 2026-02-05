@@ -7,5 +7,6 @@ import { StateService } from './state.service';
     imports: [TickModule],
     controllers: [StateController],
     providers: [StateService],
+    exports: [StateService],
 })
 export class StateModule {}
