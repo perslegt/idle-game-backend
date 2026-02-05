@@ -56,9 +56,9 @@ export class BuildingsService {
             });
             if (!resources) throw new NotFoundException(`City resources with cityId ${cityId} not found`);
 
-            const lacking = Object.entries(cost).every(([resource, amount]) => {
-                const key = resource as keyof typeof resources;
-                return (resources[key] ?? 0) < (amount ?? 0);
+            const lacking = Object.entries(cost).every(([k, v]) => {
+                const key = k as keyof typeof resources;
+                return (resources[key] ?? 0) < (v ?? 0);
             });
             if (lacking) throw new ConflictException(`Not enough resources to upgrade ${buildingCode} to level ${nextLevel}`);
 

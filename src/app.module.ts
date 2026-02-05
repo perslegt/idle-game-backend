@@ -6,7 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { TickModule } from './tick/tick.module';
 import { StateModule } from './state/state.module';
 import { BuildingsModule } from './buildings/buildings.module';
-import { TroopsModule } from './troops/troop.module';
+import { TroopsModule } from './troops/troops.module';
 
 @Module({
   imports: [
