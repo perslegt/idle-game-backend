@@ -95,4 +95,60 @@ export class TroopsService {
             });
         });
     }
+
+    async getTrainingCostPreview(cityId: string, troopCode: string, quantity: number) {
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            throw new BadRequestException('quantity must be an integer >= 1');
+        }
+
+        const city = await this.prisma.city.findUnique({
+            where: { id: cityId },
+            select: { id: true },
+        });
+        if (!city) throw new NotFoundException('City not found');
+
+        const troopType = await this.prisma.troopType.findUnique({
+            where: { code: troopCode },
+            select: { id: true },
+        });
+        if (!troopType) throw new NotFoundException('Troop type not found');
+
+        const stack = await this.prisma.cityTroopStack.findFirst({
+            where: { cityId, troopTypeId: troopType.id },
+            orderBy: { level: 'asc' },
+            select: { level: true },
+        });
+        if (!stack) throw new NotFoundException('City troop stack not found');
+
+        const baseCost = TROOP_TRAINING_COST[troopCode]?.[stack.level];
+        if (!baseCost) {
+            throw new BadRequestException(`No training cost configured for ${troopCode} level ${stack.level}`);
+        }
+
+        const cost = Object.fromEntries(
+            Object.entries(baseCost).map(([k, v]) => [k, (v ?? 0) * quantity]),
+        ) as Partial<Record<string, number>>;
+
+        const resources = await this.prisma.cityResources.findUnique({
+            where: { cityId },
+            select: { wood: true, stone: true, iron: true, food: true, gold: true },
+        });
+        if (!resources) throw new NotFoundException('City resources not found');
+
+        const canAfford = Object.entries(cost).every(([k, v]) => {
+            const key = k as keyof typeof resources;
+            return (resources[key] ?? 0) >= (v ?? 0);
+        });
+
+        return {
+            ok: true,
+            cityId,
+            troopCode,
+            level: stack.level,
+            quantity,
+            cost,
+            canAfford,
+        };
+        }
+
 }
