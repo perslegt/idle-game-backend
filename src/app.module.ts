@@ -5,9 +5,10 @@ import { PlayersModule } from './players/players.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TickModule } from './tick/tick.module';
 import { StateModule } from './state/state.module';
+import { BuildingsModule } from './buildings/buildings.module';
 
 @Module({
-  imports: [PlayersModule, PrismaModule,  TickModule, StateModule],
+  imports: [PlayersModule, PrismaModule,  TickModule, StateModule, BuildingsModule],
   controllers: [AppController],
   providers: [AppService],
 })
