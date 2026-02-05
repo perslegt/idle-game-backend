@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { StateController } from './state.controller';
+import { TickModule } from 'src/tick/tick.module';
+import { StateService } from './state.service';
 
 @Module({
-  controllers: [StateController],
+    imports: [TickModule],
+    controllers: [StateController],
+    providers: [StateService],
 })
 export class StateModule {}

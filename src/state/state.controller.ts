@@ -1,13 +1,13 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { StateService } from './state.service';
 
 @Controller('state')
 export class StateController {
-  @Get()
-  getState(@Query('playerId') playerId?: string) {
-    return {
-      ok: true,
-      playerId: playerId ?? null,
-      note: 'Issue #4 skeleton - next step will add tick + state load',
-    };
-  }
+    constructor(private readonly stateService: StateService) {}
+
+    @Get()
+    getState(@Query('playerId') playerId: string) {
+        return this.stateService.getState(playerId);
+    }
+    
 }
