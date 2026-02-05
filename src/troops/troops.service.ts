@@ -140,6 +140,15 @@ export class TroopsService {
             return (resources[key] ?? 0) >= (v ?? 0);
         });
 
+        const missing = Object.fromEntries(
+            Object.entries(cost).map(([k, v]) => {
+                const key = k as keyof typeof resources;
+                const have = resources[key] ?? 0;
+                const need = v ?? 0;
+                return [k, Math.max(0, need - have)];
+            }),
+        );
+
         return {
             ok: true,
             cityId,
@@ -148,7 +157,8 @@ export class TroopsService {
             quantity,
             cost,
             canAfford,
+            missing,
         };
-        }
+    }
 
 }
