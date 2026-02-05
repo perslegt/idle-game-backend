@@ -10,6 +10,6 @@ export class BuildingsController {
         @Param('cityId', new ParseUUIDPipe({ version: '4' })) cityId: string,
         @Param('buildingCode') buildingCode: string,
     ) {
-        return this.buildingsService.canUpgrade(cityId, buildingCode);
+        return this.buildingsService.upgrade(cityId, buildingCode);
     }
 }
