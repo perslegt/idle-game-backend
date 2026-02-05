@@ -73,21 +73,21 @@ export class StateService {
 
         const gained = (tick as any)?.gainedByResource ?? {};
 
+        const didGain =
+            tick.gainedByResource.gold > 0 ||
+            tick.gainedByResource.wood > 0 ||
+            tick.gainedByResource.stone > 0 ||
+            tick.gainedByResource.iron > 0 ||
+            tick.gainedByResource.food > 0;
+        
+        const tickResult = didGain ? tick : null;
+
         return {
             ok: true,
             serverTime: new Date().toISOString(),
             playerId: player.id,
             cityId: player.city.id,
-            tick: {
-                elapsedSeconds: tick.elapsedSeconds,
-                gainedByResource: {
-                gold: Number(gained.gold ?? 0),
-                wood: Number(gained.wood ?? 0),
-                stone: Number(gained.stone ?? 0),
-                iron: Number(gained.iron ?? 0),
-                food: Number(gained.food ?? 0),
-                },
-            },
+            tick: tickResult,
             state,
         };
     }
