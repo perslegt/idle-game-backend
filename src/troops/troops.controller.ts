@@ -13,6 +13,6 @@ export class TroopsController {
         @Body() body: TrainTroopsDto,
         @Query('playerId', new ParseUUIDPipe({ version: '4' })) playerId: string,
     ) {
-        return this.troopsService.train(cityId, troopType, body.quantity, playerId);
+        return this.troopsService.trainAndReturnState(playerId, cityId, troopType, body.quantity);
     }
 }
