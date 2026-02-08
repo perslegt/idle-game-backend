@@ -7,6 +7,7 @@ import { TickModule } from './tick/tick.module';
 import { StateModule } from './state/state.module';
 import { BuildingsModule } from './buildings/buildings.module';
 import { TroopsModule } from './troops/troops.module';
+import { BattleModule } from './battles/battle.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { TroopsModule } from './troops/troops.module';
     TickModule,
     StateModule,
     BuildingsModule,
-    TroopsModule
+    TroopsModule,
+    BattleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

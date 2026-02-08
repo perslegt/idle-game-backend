@@ -91,6 +91,48 @@ async function main() {
         categoryId: tt.categoryId,
       },
     });
+
+    const TROOP_LEVELS: Record<
+      string,
+      Array<{ level: number; attack: number; defense: number; carryCapacity: number }>
+    > = {
+      inf_infantry: [
+        { level: 1, attack: 2, defense: 3, carryCapacity: 10 },
+        { level: 2, attack: 3, defense: 4, carryCapacity: 12 },
+      ],
+      arc_archer: [
+        { level: 1, attack: 3, defense: 1, carryCapacity: 8 },
+        { level: 2, attack: 4, defense: 2, carryCapacity: 10 },
+      ],
+      cav_cavalry: [
+        { level: 1, attack: 4, defense: 2, carryCapacity: 15 },
+        { level: 2, attack: 5, defense: 3, carryCapacity: 18 },
+      ],
+    };
+
+    const troopTypesWithId = await prisma.troopType.findMany({
+      select: { id: true, code: true },
+    });
+
+    const troopTypeLevelsData = troopTypesWithId.flatMap((t) => {
+      const levels = TROOP_LEVELS[t.code];
+      if (!levels) {
+        throw new Error(`Missing TROOP_LEVELS config for troopType code: ${t.code}`);
+      }
+
+      return levels.map((lvl) => ({
+        troopTypeId: t.id,
+        level: lvl.level,
+        attack: lvl.attack,
+        defense: lvl.defense,
+        carryCapacity: lvl.carryCapacity,
+      }));
+    });
+
+    await prisma.troopTypeLevel.createMany({
+      data: troopTypeLevelsData,
+      skipDuplicates: true,
+    });
   }
 
   console.log(`Seed complete. World=${world.code}, buildingTypes=${buildingTypes.length}`);
