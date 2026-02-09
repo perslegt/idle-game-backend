@@ -20,23 +20,64 @@ export class BattleService {
                 FROM "cities"
                 WHERE id IN (${a}, ${d})
                 FOR UPDATE
-             `;
+            `;
 
-             const attackerArmy = await this.getArmyTx(tx, attackerCityId);
-             const defenderArmy = await this.getArmyTx(tx, defenderCityId);
+            const attackerArmy = await this.getArmyTx(tx, attackerCityId);
+            const defenderArmy = await this.getArmyTx(tx, defenderCityId);
 
-             const result = resolveBattleV0_1(attackerArmy, defenderArmy);
+            const result = resolveBattleV0_1(attackerArmy, defenderArmy);
 
-             await this.applyRemainingTroopsTx(tx, attackerCityId, result.attackerRemaining);
-             await this.applyRemainingTroopsTx(tx, defenderCityId, result.defenderRemaining);
+            await this.applyRemainingTroopsTx(tx, attackerCityId, result.attackerRemaining);
+            await this.applyRemainingTroopsTx(tx, defenderCityId, result.defenderRemaining);
 
-             return {
+            const attackerCity = await tx.city.findUnique({
+                where: { id: attackerCityId },
+                select: { 
+                    playerId: true,
+                    player: {
+                        select: { worldId: true}
+                    }
+                },
+            });
+            const defenderCity = await tx.city.findUnique({
+                where: { id: defenderCityId },
+                select: { playerId: true, }
+            });
+            if (!attackerCity || !defenderCity) {
+                throw new NotFoundException('Attacker or defender city not found');
+            }
+
+            await tx.pvpBattle.create({
+                data: {
+                    worldId: attackerCity.player.worldId,
+                    attackerId: attackerCity.playerId,
+                    defenderId: defenderCity.playerId,
+
+                    resolverVersion: 'v0.1',
+                    attackPower: BigInt(0),  // vullen we later
+                    defensePower: BigInt(0), // vullen we later
+                    result: result.winner === 'attacker' ? 'attacker_win' : 'defender_win',
+
+                    troopsSent: {}, // later
+                    attackerLosses: result.attackerLosses,
+                    defenderLosses: result.defenderLosses,
+
+                    lootPotential: {}, // later
+                    lootActual: {},    // later
+                    carryCapacity: 0,  // later
+
+                    resourcesBefore: {}, // later
+                    resourcesAfter: {},  // later
+                },
+            });
+
+            return {
                 ok: true,
                 attackerCityId,
                 defenderCityId,
                 winner: result.winner,
                 note: 'Issue #7: resolverV0_1 applied with DB writes',
-             };
+            };
         });
     }
 
