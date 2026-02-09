@@ -9,25 +9,20 @@ export class StateService {
         private readonly tickService: TickService,
     ) {}
 
-    async getState(playerId?: string) {
-        if (!playerId) throw new BadRequestException('Player ID is required');
+    async getState(cityId?: string) {
+        if (!cityId) throw new BadRequestException('City ID is required');
 
-        const player = await this.prisma.player.findUnique({
-            where: { id: playerId },
-            select: {
-                id: true,
-                city: {
-                    select: { id: true }
-                },
-            },
+        const city = await this.prisma.city.findUnique({
+            where: { id: cityId },
+            select: { id: true },
         });
 
-        if (!player || !player.city) throw new BadRequestException('Player or city not found');
+        if (!city) throw new BadRequestException('City not found');
 
-        const tick = await this.tickService.tickCity(player.city.id);
+        const tick = await this.tickService.tickCity(city.id);
 
         const state = await this.prisma.city.findUnique({
-            where: { id: player.city.id },
+            where: { id: city.id },
             select: {
                 id: true,
                 lastTickAt: true,
@@ -85,8 +80,7 @@ export class StateService {
         return {
             ok: true,
             serverTime: new Date().toISOString(),
-            playerId: player.id,
-            cityId: player.city.id,
+            cityId: city.id,
             tick: tickResult,
             state,
         };

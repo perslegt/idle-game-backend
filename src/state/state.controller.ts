@@ -6,8 +6,8 @@ export class StateController {
     constructor(private readonly stateService: StateService) {}
 
     @Get()
-    getState(@Query('playerId', new ParseUUIDPipe({ version: '4' })) playerId: string) {
-        return this.stateService.getState(playerId);
+    getState(@Query('cityId', new ParseUUIDPipe({ version: '4' })) cityId: string) {
+        return this.stateService.getState(cityId);
     }
 
 }
