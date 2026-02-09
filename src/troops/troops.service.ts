@@ -13,9 +13,9 @@ export class TroopsService {
         private readonly stateService: StateService,
     ) {}
 
-    async trainAndReturnState(playerId: string, cityId: string, troopCode: string, quantity: number) {
+    async trainAndReturnState(cityId: string, troopCode: string, quantity: number) {
         await this.train(cityId, troopCode, quantity);
-        return this.stateService.getState(playerId);
+        return this.stateService.getState(cityId);
     }
 
     async train(cityId: string, troopCode: string, quantity: number) {

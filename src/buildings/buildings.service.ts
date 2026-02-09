@@ -12,9 +12,9 @@ export class BuildingsService {
         private readonly stateService: StateService,
     ) {}
 
-    async upgradeAndReturnState(playerId: string, cityId: string, buildingCode: string) {
+    async upgradeAndReturnState(cityId: string, buildingCode: string) {
         await this.upgrade(cityId, buildingCode);
-        return this.stateService.getState(playerId);
+        return this.stateService.getState(cityId);
     }
 
     async upgrade(cityId: string, buildingCode: string) {

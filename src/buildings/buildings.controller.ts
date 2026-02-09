@@ -9,8 +9,7 @@ export class BuildingsController {
     upgradeBuilding(
         @Param('cityId', new ParseUUIDPipe({ version: '4' })) cityId: string,
         @Param('buildingCode') buildingCode: string,
-        @Query('playerId', new ParseUUIDPipe({ version: '4' })) playerId: string,
     ) {
-        return this.buildingsService.upgradeAndReturnState(playerId, cityId, buildingCode);
+        return this.buildingsService.upgradeAndReturnState(cityId, buildingCode);
     }
 }

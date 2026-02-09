@@ -11,9 +11,8 @@ export class TroopsController {
         @Param('cityId', new ParseUUIDPipe({ version: '4' })) cityId: string,
         @Param('troopType') troopType: string,
         @Body() body: TrainTroopsDto,
-        @Query('playerId', new ParseUUIDPipe({ version: '4' })) playerId: string,
     ) {
-        return this.troopsService.trainAndReturnState(playerId, cityId, troopType, body.quantity);
+        return this.troopsService.trainAndReturnState(cityId, troopType, body.quantity);
     }
 
     @Get(':troopType/train/preview')
