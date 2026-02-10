@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { TickService } from "src/tick/tick.service";
+import { calculateRatesPerSecond } from "src/tick/utils/calculate-rate-per-second";
 
 @Injectable()
 export class StateService {
@@ -65,8 +66,8 @@ export class StateService {
                 },
             },
         });
-
-        const gained = (tick as any)?.gainedByResource ?? {};
+        
+        const ratesPerSecond = calculateRatesPerSecond(state?.buildings ?? []);
 
         const didGain =
             tick.gainedByResource.gold > 0 ||
@@ -81,6 +82,7 @@ export class StateService {
             ok: true,
             serverTime: new Date().toISOString(),
             cityId: city.id,
+            ratesPerSecond,
             tick: tickResult,
             state,
         };
