@@ -10,7 +10,7 @@ export class StateService {
         private readonly tickService: TickService,
     ) {}
 
-    async getState(cityId?: string) {
+    async getState(cityId?: string, opts?: { skipTick?: boolean }) {
         if (!cityId) throw new BadRequestException('City ID is required');
 
         const city = await this.prisma.city.findUnique({
@@ -20,7 +20,7 @@ export class StateService {
 
         if (!city) throw new BadRequestException('City not found');
 
-        const tick = await this.tickService.tickCity(city.id);
+        const tick = opts?.skipTick ? null : await this.tickService.tickCity(city.id);
 
         const state = await this.prisma.city.findUnique({
             where: { id: city.id },
@@ -69,14 +69,10 @@ export class StateService {
         
         const ratesPerSecond = calculateRatesPerSecond(state?.buildings ?? []);
 
-        const didGain =
-            tick.gainedByResource.gold > 0 ||
-            tick.gainedByResource.wood > 0 ||
-            tick.gainedByResource.stone > 0 ||
-            tick.gainedByResource.iron > 0 ||
-            tick.gainedByResource.food > 0;
-        
-        const tickResult = didGain ? tick : null;
+        const tickResult =
+            tick && Object.values(tick.gainedByResource).some((v) => v > 0)
+                ? tick
+                : null;
 
         return {
             ok: true,

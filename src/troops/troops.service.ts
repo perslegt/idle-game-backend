@@ -13,12 +13,12 @@ export class TroopsService {
         private readonly stateService: StateService,
     ) {}
 
-    async trainAndReturnState(cityId: string, troopCode: string, quantity: number) {
-        await this.train(cityId, troopCode, quantity);
-        return this.stateService.getState(cityId);
+    async trainAndReturnState(cityId: string, troopCode: string, level: number, quantity: number) {
+        await this.train(cityId, troopCode, level, quantity);
+        return this.stateService.getState(cityId, { skipTick: true });
     }
 
-    async train(cityId: string, troopCode: string, quantity: number) {
+    async train(cityId: string, troopCode: string, level: number, quantity: number) {
         await this.prisma.$transaction(async (tx) => {
             const row = await tx.$queryRaw<{ id: string }[]>`
                 SELECT id
@@ -36,19 +36,16 @@ export class TroopsService {
             });
             if (!troopType) throw new NotFoundException(`Troop type with code ${troopCode} not found`);
 
-            const stack = await tx.cityTroopStack.findFirst({
-                where: {
-                    cityId,
-                    troopTypeId: troopType.id,
-                },
-                orderBy: { level: 'asc' },
-                select: { level: true, quantity: true },
-            });
-            if (!stack) throw new NotFoundException(`City troop stack with cityId ${cityId} and troopTypeCode ${troopCode} not found`);
-        
-            const baseCost = TROOP_TRAINING_COST[troopCode]?.[stack.level];
+            if (!Number.isInteger(level) || level < 1) {
+                throw new BadRequestException('level must be an integer >= 1');
+            }
+            if (!Number.isInteger(quantity) || quantity < 1) {
+                throw new BadRequestException('quantity must be an integer >= 1');
+            }
+
+            const baseCost = TROOP_TRAINING_COST[troopCode]?.[level];
             if (!baseCost) {
-                throw new BadRequestException(`No training cost configured for ${troopCode} level ${stack.level}`);
+                throw new BadRequestException(`No training cost configured for ${troopCode} level ${level}`);
             }
 
             const totalCost = Object.fromEntries(
@@ -68,7 +65,7 @@ export class TroopsService {
 
             if (lacking.length > 0) {
                 throw new BadRequestException(
-                    `Not enough resources to train ${quantity} ${troopCode} at level ${stack.level}. Lacking: ${lacking
+                    `Not enough resources to train ${quantity} ${troopCode} at level ${level}. Lacking: ${lacking
                     .map(([k, v]) => `${k} (need ${v}, have ${resources[k as keyof typeof resources] ?? 0})`)
                     .join(', ')}`,
                 );
@@ -85,20 +82,23 @@ export class TroopsService {
                 },
             });
 
-            await tx.cityTroopStack.updateMany({
+            await tx.cityTroopStack.upsert({
                 where: {
-                    cityId,
-                    troopTypeId: troopType.id,
-                    level: stack.level,
+                    cityId_troopTypeId_level: { cityId, troopTypeId: troopType.id, level },
                 },
-                data: { quantity: { increment: quantity } },
+                update: { quantity: { increment: quantity } },
+                create: { cityId, troopTypeId: troopType.id, level, quantity },
             });
+
         });
     }
 
-    async getTrainingCostPreview(cityId: string, troopCode: string, quantity: number) {
+    async getTrainingCostPreview(cityId: string, troopCode: string, level: number, quantity: number) {
         if (!Number.isInteger(quantity) || quantity < 1) {
             throw new BadRequestException('quantity must be an integer >= 1');
+        }
+        if (!Number.isInteger(level) || level < 1) {
+            throw new BadRequestException('level must be an integer >= 1');
         }
 
         const city = await this.prisma.city.findUnique({
@@ -113,16 +113,9 @@ export class TroopsService {
         });
         if (!troopType) throw new NotFoundException('Troop type not found');
 
-        const stack = await this.prisma.cityTroopStack.findFirst({
-            where: { cityId, troopTypeId: troopType.id },
-            orderBy: { level: 'asc' },
-            select: { level: true },
-        });
-        if (!stack) throw new NotFoundException('City troop stack not found');
-
-        const baseCost = TROOP_TRAINING_COST[troopCode]?.[stack.level];
+        const baseCost = TROOP_TRAINING_COST[troopCode]?.[level];
         if (!baseCost) {
-            throw new BadRequestException(`No training cost configured for ${troopCode} level ${stack.level}`);
+            throw new BadRequestException(`No training cost configured for ${troopCode} level ${level}`);
         }
 
         const cost = Object.fromEntries(
@@ -153,7 +146,7 @@ export class TroopsService {
             ok: true,
             cityId,
             troopCode,
-            level: stack.level,
+            level,
             quantity,
             cost,
             canAfford,

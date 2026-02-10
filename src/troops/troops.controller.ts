@@ -12,7 +12,7 @@ export class TroopsController {
         @Param('troopType') troopType: string,
         @Body() body: TrainTroopsDto,
     ) {
-        return this.troopsService.trainAndReturnState(cityId, troopType, body.quantity);
+        return this.troopsService.trainAndReturnState(cityId, troopType, body.level, body.quantity);
     }
 
     @Get(':troopType/train/preview')
@@ -20,7 +20,8 @@ export class TroopsController {
         @Param('cityId', new ParseUUIDPipe({ version: '4' })) cityId: string,
         @Param('troopType') troopType: string,
         @Query('quantity', ParseIntPipe) quantity: number,
+        @Query('level', ParseIntPipe) level: number,
     ) {
-        return this.troopsService.getTrainingCostPreview(cityId, troopType, quantity);
+        return this.troopsService.getTrainingCostPreview(cityId, troopType, level, quantity);
     }
 }

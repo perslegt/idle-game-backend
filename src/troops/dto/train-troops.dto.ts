@@ -4,4 +4,8 @@ export class TrainTroopsDto {
     @IsInt()
     @Min(1)
     quantity!: number;
+
+    @IsInt()
+    @Min(1)
+    level!: number;
 }
